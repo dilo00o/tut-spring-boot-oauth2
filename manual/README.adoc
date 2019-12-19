@@ -1,28 +1,29 @@
 [[_social_login_manual]]
 = Manual Configuration of OAuth2 Client
 
-In this section we modify the <<_social_login_logout,logout>> app we
-already built by picking apart the "magic" in the `@EnableOAuth2Sso`
+In this section, we modify the <<_social_login_logout,logout>> application we
+already built by picking apart the "`magic`" in the `@EnableOAuth2Sso`
 annotation, manually configuring everything in there to make it
 explicit.
 
 == Clients and Authentication
 
-There are 2 features behind `@EnableOAuth2Sso`: the OAuth2 client, and
+There are two features behind `@EnableOAuth2Sso`: the OAuth2 client and
 the authentication. The client is re-usable, so you can also use it to
 interact with the OAuth2 resources that your Authorization Server (in
-this case Facebook) provides (in this case the
+this case, Facebook) provides (in this case, the
 https://developers.facebook.com/docs/graph-api[Graph API]). The
-authentication piece aligns your app with the rest of Spring Security,
-so once the dance with Facebook is over your app behaves exactly like
-any other secure Spring app.
+authentication piece aligns your application with the rest of Spring Security.
+So, once the dance with Facebook is over, your application behaves exactly like
+any other secure Spring application.
 
 The client piece is provided by Spring Security OAuth2 and switched on
-by a different annotation `@EnableOAuth2Client`. So the first step in
+by a different annotation, `@EnableOAuth2Client`. So, the first step in
 this transformation is to remove the `@EnableOAuth2Sso` and replace it
-with the lower level annotation:
+with the lower-level annotation, as follows:
 
 .SocialApplication
+====
 [source,java]
 ----
 @SpringBootApplication
@@ -32,13 +33,15 @@ public class SocialApplication extends WebSecurityConfigurerAdapter {
   ...
 }
 ----
+====
 
-Once that is done we have some stuff created for us that will be
-useful. First off we can inject an `OAuth2ClientContext` and use it to
+Once that is done, we have some useful stuff created for us.
+First off, we can inject an `OAuth2ClientContext` and use it to
 build an authentication filter that we add to our security
-configuration:
+configuration, as follows:
 
 .SocialApplication
+====
 [source,java]
 ----
 @SpringBootApplication
@@ -60,10 +63,12 @@ public class SocialApplication extends WebSecurityConfigurerAdapter {
 
 }
 ----
+====
 
-this filter is created in new method where we use the `OAuth2ClientContext`:
+This filter is created in a new method where we use the `OAuth2ClientContext`, as follows:
 
 .SocialApplication
+====
 [source,java]
 ----
 private Filter ssoFilter() {
@@ -76,10 +81,13 @@ private Filter ssoFilter() {
   return facebookFilter;
 }
 ----
+====
 
-the filter also needs to know about the client registration with Facebook:
+The filter also needs to know about the client registration with Facebook.
+The following addition takes care of that:
 
 .SocialApplication
+====
 [source,java]
 ----
 
@@ -89,11 +97,13 @@ the filter also needs to know about the client registration with Facebook:
     return new AuthorizationCodeResourceDetails();
   }
 ----
+====
 
-and to complete the authentication it needs to know where the user
-info endpoint is in Facebook:
+To complete the authentication, the application needs to know where the user
+info endpoint is in Facebook. We can define that as follows:
 
 .SocialApplication
+====
 [source,java]
 ----
   @Bean
@@ -102,14 +112,16 @@ info endpoint is in Facebook:
     return new ResourceServerProperties();
   }
 ----
+====
 
-Note that with both these "static" data objects (`facebook()` and
+Note that, with both these "`static`" data objects (`facebook()` and
 `facebookResource()`) we used a `@Bean` decorated as
 `@ConfigurationProperties`. That means that we can convert the
 `application.yml` to a slightly new format, where the prefix for
-configuration is `facebook` instead of `security.oauth2`:
+configuration is `facebook` instead of `security.oauth2`, as follows:
 
 .application.yml
+====
 [source,yaml]
 ----
 facebook:
@@ -122,14 +134,16 @@ facebook:
     authenticationScheme: query
     clientAuthenticationScheme: form
   resource:
-    userInfoUri: https://graph.facebook.com/me      
+    userInfoUri: https://graph.facebook.com/me
 ----
+====
 
-Finally, we changed the path to the login to be facebook-specific in the 
-`Filter` declaration above, so we need to make the same change in the
-HTML:
+Finally, we changed the path to the login to be facebook-specific in the
+`Filter` declaration (shown earlier), so we need to make the same change in the
+HTML, as follows:
 
 .index.html
+====
 [source,html]
 ----
 <h1>Login</h1>
@@ -139,18 +153,20 @@ HTML:
 	</div>
 </div>
 ----
+====
 
 == Handling the Redirects
 
 The last change we need to make is to explicitly support the redirects
-from our app to Facebook. This is handled in Spring OAuth2 with a
+from our application to Facebook. This is handled in Spring OAuth2 with a
 servlet `Filter`, and the filter is already available in the
 application context because we used `@EnableOAuth2Client`. All that is
-needed is to wire the filter up so that it gets called in the right
-order in our Spring Boot application. To do that we need a
-`FilterRegistrationBean`:
+still needed is to wire the filter up so that it gets called in the right
+order in our Spring Boot application. To do that, we need a
+`FilterRegistrationBean`, as the following listing shows:
 
 .SocialApplication.java
+====
 [source,java]
 ----
 @Bean
@@ -161,17 +177,18 @@ order in our Spring Boot application. To do that we need a
 		return registration;
 	}
 ----
+====
 
-We autowire the already available filter, and register it with a
+We autowire the already available filter and register it with a
 sufficiently low order that it comes *before* the main Spring Security
-filter. In this way we can use it to handle redirects signaled by
+filter. In this way, we can use it to handle redirects signaled by
 exceptions in authentication requests.
 
-With these changes in place the app is good to go, and at runtime is
+With these changes in place, the application is good to go and, at runtime, is
 equivalent to the <<_social_login_logout,logout>> sample we built in
 the last section. Breaking the configuration down and making it
 explicit teaches us that there is nothing magical about what Spring
-Boot is doing (it's just configuration boiler plate), and it also
+Boot is doing (it is just configuration boiler plate), and it also
 prepares our application for extending the features provided
 automatically out of the box, adding our own opinions and business
 requirements.
